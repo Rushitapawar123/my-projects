@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rooms     RoomParticipant[]
+  messages  Message[]
+  files     SharedFile[]
+  createdRooms Room[] @relation("RoomCreator")
+}
+
+model Room {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdBy   String
+  isPrivate   Boolean  @default(false)
+  password    String?
+  maxUsers    Int      @default(10)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  participants RoomParticipant[]
+  messages     Message[]
+  files        SharedFile[]
+
+  creator User @relation("RoomCreator", fields: [createdBy], references: [id])
+}
+
+model RoomParticipant {
+  id       String   @id @default(cuid())
+  userId   String
+  roomId   String
+  role     String   @default("participant")
+  joinedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  room Room @relation(fields: [roomId], references: [id])
+
+  @@unique([userId, roomId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  type      String   @default("text")
+  senderId  String
+  roomId    String
+  createdAt DateTime @default(now())
+
+  sender User @relation(fields: [senderId], references: [id])
+  room   Room @relation(fields: [roomId], references: [id])
+}
+
+model SharedFile {
+  id        String   @id @default(cuid())
+  name      String
+  size      Int
+  mimeType  String
+  data      String
+  userId    String
+  roomId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  room Room @relation(fields: [roomId], references: [id])
+}
